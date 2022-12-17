@@ -1,4 +1,5 @@
 import math
+import os
 import asyncio
 import mimetypes
 import pathlib
@@ -24,7 +25,6 @@ bot = Client("my_bot", api_hash=API_HASH, api_id=API_ID, bot_token=BOT_TOKEN)
 
 users_list = {}
 empty_list = "📝 Still no files to download."
-formats = ['text/plain', 'application/pdf']
 users_in_channel: Dict[int, dt.datetime] = dict()
     
 @bot.on_message(filters=~(filters.private & filters.incoming))
