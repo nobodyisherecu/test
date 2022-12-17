@@ -190,8 +190,8 @@ async def progress_bar(current, total, status_msg, start, msg, filename):
             print(e)
             pass
 
-#async def start():
-    #print('Running')
+async def start():
+    print('Running')
     #await bot.send_message(MESSAGE_CHANNEL_ID, "Hello.")
 
 if __name__ == "__main__":
