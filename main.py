@@ -16,7 +16,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 API_ID: int = int(os.environ.get("API_ID"))
 API_HASH: str = os.environ.get("API_HASH")
 BOT_TOKEN: str = os.environ.get("BOT_TOKEN")
-MESSAGE_CHANNEL_ID: int = int(os.environ.get("MESSAGE_CHANNEL_ID"))
+#MESSAGE_CHANNEL_ID: int = int(os.environ.get("MESSAGE_CHANNEL_ID"))
 
 
 bot = Client("my_bot", api_hash=API_HASH, api_id=API_ID, bot_token=BOT_TOKEN)
@@ -190,9 +190,9 @@ async def progress_bar(current, total, status_msg, start, msg, filename):
             print(e)
             pass
 
-async def start():
-    print('Running')
-    await bot.send_message(MESSAGE_CHANNEL_ID, "Hello.")
+#async def start():
+    #print('Running')
+    #await bot.send_message(MESSAGE_CHANNEL_ID, "Hello.")
 
 if __name__ == "__main__":
     bot.start()
