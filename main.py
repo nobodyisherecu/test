@@ -12,7 +12,6 @@ from pyrogram import Client, filters, idle
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 
-from functions import *
 
 API_ID: int = int(os.environ.get("API_ID"))
 API_HASH: str = os.environ.get("API_HASH")
@@ -24,7 +23,7 @@ bot = Client("my_bot", api_hash=API_HASH, api_id=API_ID, bot_token=BOT_TOKEN)
 
 
 users_list = {}
-empty_list = "📝 Still no files to compress."
+empty_list = "📝 Still no files to download."
 formats = ['text/plain', 'application/pdf']
 users_in_channel: Dict[int, dt.datetime] = dict()
     
@@ -78,9 +77,7 @@ def is_empty(user_id: str):
 @bot.on_message(filters.command("start"))
 async def get_list(client, message):
     text_to_send = """
-Forward all the files you want to the bot and when you are ready to compress them send /compress
-Specify the maximum size in MB of the zip or not if you don't want limits. Ex: __/compress 10__
-To see the list of files to compress send /list and to clear the list to compress send /clear
+Forward all the files you want to the bot and when you are ready to download them send /download
 """
     await message.reply_text(text_to_send)
 
@@ -91,7 +88,7 @@ async def get_list(client, message):
     if is_empty(user_id):
         text_to_send = empty_list
     else:
-        text_to_send = "📝 List of files to compress by type:\n"
+        text_to_send = "📝 List of files to download by type:\n"
         for message_id in users_list[user_id]:
             message = await client.get_messages(user_id, message_id)
             filename = getattr(message, message.media.value).file_name
@@ -113,15 +110,6 @@ async def clear_list(client, message):
     await message.reply_text('📝 list cleaned')
 
 
-@bot.on_message(filters.command("cache_folder"))
-async def clear_list(client, message):
-    dirpath = Path(f'{message.from_user.id}/')
-    text = '📝 Temporary file list:\n'
-    for i, file in enumerate(sorted(dirpath.rglob('*.*'))):
-        text += f'\n◾:{i}- **{file.name}** size: **{naturalsize(file.stat().st_size)}**'
-    text += '\n\nUse **/clear_cache_folder** to remove them or **/compress** to retry compressing them.'
-    await message.reply_text(text)
-
 
 @bot.on_message(filters.command("clear_cache_folder"))
 async def clear_list(client, message):
@@ -134,32 +122,15 @@ async def clear_list(client, message):
         await message.reply_text(f'Your temporary folder is empty.')
 
 
-@bot.on_message(filters.regex('\/compress\s*(\d*)'))
-async def compress(client, message):
+@bot.on_message(filters.command("download"))
+async def download(client, message):
     user_id = message.from_user.id
     if is_empty(user_id):
         await message.reply_text(empty_list)
         return
     dirpath = Path(f'{user_id}/files')
     size = message.matches[0].group(1)
-    file_name = await client.ask(chat_id=message.from_user.id,
-                                 text="Send me the New FileName for this task or send /cancel to stop",
-                                 filters=filters.text)
-    await file_name.request.delete()
-    new_file_name = file_name.text
-    if new_file_name.lower() == "/cancel":
-        await message.delete()
-        return
-
-    password = await client.ask(chat_id=message.from_user.id,
-                                text="Send me the password 🔒 for this task or send **NO** if you don't want.",
-                                filters=filters.text)
-    await password.request.delete()
-
-    password = password.text
-
-    if str.lower(password) == 'no':
-        password = None
+    
 
     progress_download = await message.reply_text("Downloading 📥...")
     inicial = dt.datetime.now()
@@ -170,16 +141,7 @@ async def compress(client, message):
     await progress_download.delete()
     await message.reply_text(
         f"Downloads finished in 📥 {humanize.naturaldelta(dt.datetime.now() - inicial)}.")
-    await message.reply_text("Compression started 🗜")
-    parts_path = zip_files(dirpath, size, new_file_name, password)
-    await message.reply_text("Compression finished 🗜")
-    progress_upload = await message.reply_text("Uploading 📤...")
-    inicial = dt.datetime.now()
-    for file in sorted(parts_path.iterdir()):
-        await upload_file(user_id, file, progress_upload)
-    shutil.rmtree(str(parts_path.absolute()))
-    await progress_upload.delete()
-    await message.reply_text(f"Uploaded in 📤 {humanize.naturaldelta(dt.datetime.now() - inicial)}.")
+    
 
 
 async def download_file(message: Message, dirpath: str, progress_message: Message):
@@ -202,14 +164,6 @@ async def download_file(message: Message, dirpath: str, progress_message: Messag
         print(e)
 
 
-async def upload_file(user_id: str, file: str, progress_message: Message):
-    try:
-        start_time = time.time()
-        await bot.send_document(user_id, file, progress=progress_bar,
-                                progress_args=("📤 Uploading:", start_time, progress_message, pathlib.Path(file).name))
-
-    except Exception as exc:
-        print(exc)
 
 
 async def progress_bar(current, total, status_msg, start, msg, filename):
